@@ -27,6 +27,24 @@ func init() {
 func New(version string) func() *schema.Provider {
 	return func() *schema.Provider {
 		p := &schema.Provider{
+			Schema: map[string]*schema.Schema{
+				"protocol": {
+					Type:     schema.TypeString,
+					Required: true,
+				},
+				"host": {
+					Type:     schema.TypeString,
+					Required: true,
+				},
+				"port": {
+					Type:     schema.TypeString,
+					Required: true,
+				},
+				"api_version": {
+					Type:     schema.TypeString,
+					Required: true,
+				},
+			},
 			DataSourcesMap: map[string]*schema.Resource{
 				"scaffolding_data_source": dataSourceScaffolding(),
 			},
@@ -41,18 +59,26 @@ func New(version string) func() *schema.Provider {
 	}
 }
 
+func GetClient(protocol string, host string, port string, apiVersion string) (marmotcoreclient.MarmotcoreClient, error) {
+	return marmotcoreclient.MarmotcoreClient{
+		Protocol:   protocol,
+		Host:       host,
+		Port:       port,
+		ApiVersion: apiVersion,
+	}, nil
+}
+
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		protocol := d.Get("protocol").(string)
 		host := d.Get("host").(string)
 		port := d.Get("port").(string)
-		apiVersion := d.Get("apiVersion").(string)
+		apiVersion := d.Get("api_version").(string)
 
-		c := marmotcoreclient.MarmotcoreClient{
-			Protocol:   protocol,
-			Host:       host,
-			Port:       port,
-			ApiVersion: apiVersion,
+		c, err := GetClient(protocol, host, port, apiVersion)
+
+		if err != nil {
+			diag.Errorf("Failed to create Marmotcore client")
 		}
 
 		return c, nil

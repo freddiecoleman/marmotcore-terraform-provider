@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 
+	marmotcoreclient "github.com/freddiecoleman/marmotcore-client"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -11,7 +12,7 @@ import (
 func nodeMarmotCore() *schema.Resource {
 	return &schema.Resource{
 		// This description is used by the documentation generator and the language server.
-		Description: "Sample resource in the Terraform provider scaffolding.",
+		Description: "Marmotcore Cloud Full Node",
 
 		CreateContext: nodeMarmotCoreCreate,
 		ReadContext:   nodeMarmotCoreRead,
@@ -19,29 +20,51 @@ func nodeMarmotCore() *schema.Resource {
 		DeleteContext: nodeMarmotCoreDelete,
 
 		Schema: map[string]*schema.Schema{
-			"sample_attribute": {
-				// This description is used by the documentation generator and the language server.
-				Description: "Sample attribute.",
+			"region": {
+				Description: "Region in which to deploy marmotcore node.",
 				Type:        schema.TypeString,
-				Optional:    true,
+				Required:    true,
+			},
+			"instance_type": {
+				Description: "Size of marmotcore node to deploy",
+				Type:        schema.TypeString,
+				Required:    true,
+			},
+			"chia_version": {
+				Description: "Version of Chia to run on marmotcore node",
+				Type:        schema.TypeString,
+				Required:    true,
+			},
+			"network": {
+				Description: "Network to run marmotcore node against. Typically mainnet or testnet.",
+				Type:        schema.TypeString,
+				Required:    true,
 			},
 		},
 	}
 }
 
 func nodeMarmotCoreCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	// use the meta value to retrieve your client from the provider configure method
-	// client := meta.(*apiClient)
+	client := meta.(marmotcoreclient.MarmotcoreClient)
 
-	idFromAPI := "my-id"
-	d.SetId(idFromAPI)
+	var diags diag.Diagnostics
 
-	// write logs using the tflog package
-	// see https://pkg.go.dev/github.com/hashicorp/terraform-plugin-log/tflog
-	// for more information
-	tflog.Trace(ctx, "created a resource")
+	result, err := client.CreateNode(&marmotcoreclient.CreateNode{
+		Region:       d.Get("region").(string),
+		InstanceType: d.Get("instance_type").(string),
+		ChiaVersion:  d.Get("chia_version").(string),
+		Network:      d.Get("network").(string),
+	})
 
-	return diag.Errorf("not implemented")
+	if err != nil {
+		return diag.Errorf("There was an error creating the node")
+	}
+
+	d.SetId(result.NodeId)
+
+	tflog.Trace(ctx, "created marmotcore node")
+
+	return diags
 }
 
 func nodeMarmotCoreRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
