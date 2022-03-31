@@ -59,8 +59,12 @@ func New(version string) func() *schema.Provider {
 	}
 }
 
-func GetClient(protocol string, host string, port string, apiVersion string) (marmotcoreclient.MarmotcoreClient, error) {
-	return marmotcoreclient.MarmotcoreClient{
+type Client interface {
+	CreateNode(createNode *marmotcoreclient.CreateNode) (marmotcoreclient.CreateNodeResponse, error)
+}
+
+var GetClient = func(protocol string, host string, port string, apiVersion string) (Client, error) {
+	return &marmotcoreclient.MarmotcoreClient{
 		Protocol:   protocol,
 		Host:       host,
 		Port:       port,

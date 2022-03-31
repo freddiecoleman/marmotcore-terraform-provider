@@ -45,7 +45,7 @@ func nodeMarmotCore() *schema.Resource {
 }
 
 func nodeMarmotCoreCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(marmotcoreclient.MarmotcoreClient)
+	client := meta.(Client)
 
 	var diags diag.Diagnostics
 

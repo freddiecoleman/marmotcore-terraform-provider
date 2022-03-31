@@ -9,7 +9,10 @@ import (
 )
 
 type MockClient struct {
-	CreateNodeFunc func(createNode *marmotcoreclient.CreateNode) (marmotcoreclient.CreateNodeResponse, error)
+	Protocol   string
+	Host       string
+	Port       string
+	ApiVersion string
 }
 
 var CreateNodeFunc func(createNode *marmotcoreclient.CreateNode) (marmotcoreclient.CreateNodeResponse, error)
@@ -19,8 +22,21 @@ func (*MockClient) CreateNode(createNode *marmotcoreclient.CreateNode) (marmotco
 }
 
 func TestAccNodeMarmotCore(t *testing.T) {
+	CreateNodeFunc = func(createNode *marmotcoreclient.CreateNode) (marmotcoreclient.CreateNodeResponse, error) {
+		return marmotcoreclient.CreateNodeResponse{
+			NodeId: "amazing-123",
+		}, nil
+	}
 
-	// Todo: overwrite GetClient to inject a mock client which asserts the calls made and responds with a http 200 response including the correct data
+	GetClient = func(protocol string, host string, port string, apiVersion string) (Client, error) {
+		return &MockClient{
+			Protocol:   "http",
+			Host:       "localhost",
+			Port:       "3000",
+			ApiVersion: "v1",
+		}, nil
+	}
+
 	resource.UnitTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
@@ -29,7 +45,15 @@ func TestAccNodeMarmotCore(t *testing.T) {
 				Config: testAccNodeMarmotCore,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
-						"marmotcore_node.foo", "protocol", regexp.MustCompile("^http")),
+						"marmotcore_node.foo", "id", regexp.MustCompile("^amazing-123")),
+					resource.TestMatchResourceAttr(
+						"marmotcore_node.foo", "region", regexp.MustCompile("^us-west-2")),
+					resource.TestMatchResourceAttr(
+						"marmotcore_node.foo", "instance_type", regexp.MustCompile("^node.small")),
+					resource.TestMatchResourceAttr(
+						"marmotcore_node.foo", "chia_version", regexp.MustCompile("^1.3.*")),
+					resource.TestMatchResourceAttr(
+						"marmotcore_node.foo", "network", regexp.MustCompile("^testnet")),
 				),
 			},
 		},
